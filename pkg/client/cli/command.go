@@ -28,7 +28,7 @@ telepresence intercept <name of service>
 
 Telepresence uses background processes to manage the cluster session. One of
 the processes runs with superuser privileges because it modifies the network.
-Unless the daemons are already started, an attempt will be made to start them.
+Unless the daemons are already started, an attempt will be made to Start them.
 This will involve a call to sudo unless this command is run as root (not
 recommended) which in turn may result in a password prompt.`
 

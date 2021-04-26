@@ -1,23 +1,25 @@
-package cli
+// +build !windows
+
+package cliutil
 
 import (
 	"context"
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"os/signal"
 	"strings"
-	"syscall"
-	"time"
 
-	// nolint:depguard // TODO: switch this stuff over to dexec
-	"os/exec"
+	"github.com/telepresenceio/telepresence/v2/pkg/proc"
+
+	"golang.org/x/sys/unix"
 
 	"github.com/telepresenceio/telepresence/v2/pkg/client/logging"
 )
 
-func runAsRoot(ctx context.Context, exe string, args []string) error {
-	if os.Geteuid() != 0 {
+func RunAsRoot(ctx context.Context, exe string, args []string) error {
+	if !proc.IsAdmin() {
 		if err := exec.Command("sudo", "-n", "true").Run(); err != nil {
 			fmt.Printf("Need root privileges to run %q\n", logging.ShellString(exe, args))
 			if err = exec.Command("sudo", "true").Run(); err != nil {
@@ -27,29 +29,10 @@ func runAsRoot(ctx context.Context, exe string, args []string) error {
 		args = append([]string{"-n", "-E", exe}, args...)
 		exe = "sudo"
 	}
-	return start(ctx, exe, args, false, nil, nil, nil)
+	return Start(ctx, exe, args, false, nil, nil, nil)
 }
 
-func envPairs(env map[string]string) []string {
-	pairs := make([]string, len(env))
-	i := 0
-	for k, v := range env {
-		pairs[i] = k + "=" + v
-		i++
-	}
-	return pairs
-}
-
-type withoutCancel struct {
-	context.Context
-}
-
-func (withoutCancel) Deadline() (deadline time.Time, ok bool) { return }
-func (withoutCancel) Done() <-chan struct{}                   { return nil }
-func (withoutCancel) Err() error                              { return nil }
-func (c withoutCancel) String() string                        { return fmt.Sprintf("%v.WithoutCancel", c.Context) }
-
-func start(ctx context.Context, exe string, args []string, wait bool, stdin io.Reader, stdout, stderr io.Writer, env ...string) error {
+func Start(ctx context.Context, exe string, args []string, wait bool, stdin io.Reader, stdout, stderr io.Writer, env ...string) error {
 	if !wait {
 		// The context should not kill it if cancelled
 		ctx = &withoutCancel{ctx}
@@ -62,9 +45,9 @@ func start(ctx context.Context, exe string, args []string, wait bool, stdin io.R
 		cmd.Env = append(os.Environ(), env...)
 	}
 	if !wait {
-		// Process must live in a process group of its own to prevent
-		// getting affected by <ctrl-c> in the terminal
-		cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+		// Ensure that the processes uses a process group of its own to prevent
+		// it getting affected by <ctrl-c> in the terminal
+		cmd.SysProcAttr = &unix.SysProcAttr{Setpgid: true}
 	}
 
 	var err error
@@ -78,7 +61,7 @@ func start(ctx context.Context, exe string, args []string, wait bool, stdin io.R
 
 	// Ensure that SIGINT and SIGTERM are propagated to the child process
 	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(sigCh, unix.SIGINT, unix.SIGTERM)
 	go func() {
 		sig := <-sigCh
 		if sig == nil {

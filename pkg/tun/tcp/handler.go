@@ -9,7 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"golang.org/x/sys/unix"
+	"github.com/telepresenceio/telepresence/v2/pkg/ipproto"
 
 	"github.com/datawire/dlib/dlog"
 	"github.com/telepresenceio/telepresence/v2/pkg/connpool"
@@ -230,7 +230,7 @@ func (h *handler) sendToTun(ctx context.Context, pkt Packet) {
 func (h *handler) newResponse(ipPlayloadLen int, withAck bool) Packet {
 	pkt := NewPacket(ipPlayloadLen, h.id.Destination(), h.id.Source(), withAck)
 	ipHdr := pkt.IPHeader()
-	ipHdr.SetL4Protocol(unix.IPPROTO_TCP)
+	ipHdr.SetL4Protocol(ipproto.TCP)
 	ipHdr.SetChecksum()
 
 	tcpHdr := Header(ipHdr.Payload())

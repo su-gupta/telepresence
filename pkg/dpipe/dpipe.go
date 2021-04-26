@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
+	"runtime"
+	"strconv"
 	"sync/atomic"
-
-	"golang.org/x/sys/unix"
 
 	"github.com/datawire/dlib/dexec"
 	"github.com/datawire/dlib/dlog"
@@ -34,7 +35,13 @@ func DPipe(ctx context.Context, cmd *dexec.Cmd, peer io.ReadWriteCloser) error {
 		<-ctx.Done()
 		atomic.StoreInt32(&closing, 1)
 		_ = peer.Close()
-		_ = cmd.Process.Signal(unix.SIGTERM)
+		if runtime.GOOS == "windows" {
+			// This kills the process and any child processes that it has started. Very important when
+			// killing sshfs-win since it starts a cygwin sshfs process that must be killed along with it
+			_ = dexec.CommandContext(ctx, "taskkill", "/T", "/F", "/PID", strconv.Itoa(cmd.Process.Pid)).Run()
+		} else {
+			_ = cmd.Process.Signal(os.Interrupt)
+		}
 	}()
 
 	go func() {

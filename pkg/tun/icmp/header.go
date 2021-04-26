@@ -3,10 +3,10 @@ package icmp
 import (
 	"encoding/binary"
 
-	"golang.org/x/net/ipv4"
-	"golang.org/x/sys/unix"
+	"github.com/telepresenceio/telepresence/v2/pkg/ipproto"
 
 	"github.com/telepresenceio/telepresence/v2/pkg/tun/ip"
+	"golang.org/x/net/ipv4"
 )
 
 const HeaderLen = 8 // Same for IPv4 and IPv6
@@ -45,9 +45,9 @@ func (h Header) Payload() []byte {
 func (h Header) SetChecksum(ipHdr ip.Header) {
 	var proto int
 	if ipHdr.Version() == ipv4.Version {
-		proto = unix.IPPROTO_ICMP
+		proto = ipproto.ICMP
 	} else {
-		proto = unix.IPPROTO_ICMPV6
+		proto = ipproto.ICMPV6
 	}
 	ip.L4Checksum(ipHdr, 2, proto)
 }

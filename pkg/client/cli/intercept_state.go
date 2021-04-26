@@ -12,6 +12,7 @@ import (
 	"os"
 	"reflect"
 	"regexp"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -221,7 +222,7 @@ func (ii *interceptInfo) intercept(cmd *cobra.Command, args []string) error {
 			if ii.dockerRun {
 				return is.runInDocker(cmd, args)
 			}
-			return start(cmd.Context(), args[0], args[1:], true, cmd.InOrStdin(), cmd.OutOrStdout(), cmd.ErrOrStderr(), envPairs(is.env)...)
+			return cliutil.Start(cmd.Context(), args[0], args[1:], true, cmd.InOrStdin(), cmd.OutOrStdout(), cmd.ErrOrStderr(), cliutil.EnvPairs(is.env)...)
 		})
 	})
 }
@@ -294,7 +295,12 @@ Please specify one or more header matches using --http-match.`
 func checkMountCapability(ctx context.Context) error {
 	// Use CombinedOutput to include stderr which has information about whether they
 	// need to upgrade to a newer version of macFUSE or not
-	cmd := dexec.CommandContext(ctx, "sshfs", "-V")
+	var cmd *dexec.Cmd
+	if runtime.GOOS == "windows" {
+		cmd = dexec.CommandContext(ctx, "sshfs-win", "cmd", "-V")
+	} else {
+		cmd = dexec.CommandContext(ctx, "sshfs", "-V")
+	}
 	cmd.DisableLogging = true
 	out, err := cmd.CombinedOutput()
 	if err != nil {
@@ -388,17 +394,45 @@ func (is *interceptState) createRequest() (*connector.CreateInterceptRequest, er
 		if err != nil {
 			mountPoint = is.mount
 			doMount = len(mountPoint) > 0
+			err = nil
 		}
 
 		if doMount {
-			if mountPoint == "" {
-				if mountPoint, err = ioutil.TempDir("", "telfs-"); err != nil {
-					return nil, err
+			if runtime.GOOS == "windows" {
+				if mountPoint == "" {
+					// Find a free drive letter. Start at T, loop around and skip C and D,
+					// A and B aren't often used nowadays. No floppy-disks.
+					for _, c := range "TUVXYZABEFGHIJKLMNOPQR" {
+						_, err = os.Stat(fmt.Sprintf(`%c:\`, c))
+						if os.IsNotExist(err) {
+							mountPoint = fmt.Sprintf(`%c:`, c)
+							err = nil
+							break
+						}
+					}
+					if mountPoint == "" {
+						err = errors.New("found no available drive to use as mount point")
+					}
+				} else {
+					// Mount point must be a drive letter
+					ok := len(mountPoint) == 2 || mountPoint[1] == ':'
+					if ok {
+						dl := mountPoint[0]
+						ok = dl >= 'A' && dl <= 'Z' || dl >= 'a' && dl <= 'z'
+					}
+					if !ok {
+						err = errors.New("mount point must be a drive letter followed by a colon")
+					}
 				}
 			} else {
-				if err = os.MkdirAll(mountPoint, 0700); err != nil {
-					return nil, err
+				if mountPoint == "" {
+					mountPoint, err = ioutil.TempDir("", "telfs-")
+				} else {
+					err = os.MkdirAll(mountPoint, 0700)
 				}
+			}
+			if err != nil {
+				return nil, err
 			}
 			ir.MountPoint = mountPoint
 		}
@@ -466,7 +500,7 @@ func (is *interceptState) EnsureState() (acquired bool, err error) {
 
 	if ir.MountPoint != "" {
 		defer func() {
-			if !acquired {
+			if !acquired && runtime.GOOS != "windows" {
 				// remove if empty
 				_ = os.Remove(ir.MountPoint)
 			}
@@ -628,7 +662,7 @@ func (is *interceptState) runInDocker(cmd *cobra.Command, args []string) error {
 	if dockerMount != "" {
 		ourArgs = append(ourArgs, "-v", fmt.Sprintf("%s:%s", is.mountPoint, dockerMount))
 	}
-	return start(cmd.Context(), "docker", append(ourArgs, args...), true, cmd.InOrStdin(), cmd.OutOrStdout(), cmd.ErrOrStderr())
+	return cliutil.Start(cmd.Context(), "docker", append(ourArgs, args...), true, cmd.InOrStdin(), cmd.OutOrStdout(), cmd.ErrOrStderr())
 }
 
 func (is *interceptState) writeEnvFile() error {

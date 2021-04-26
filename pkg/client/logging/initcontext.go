@@ -5,17 +5,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/telepresenceio/telepresence/v2/pkg/client"
-
-	"github.com/sirupsen/logrus"
-	"golang.org/x/term"
-
 	"github.com/datawire/dlib/dlog"
+	"github.com/sirupsen/logrus"
+	"github.com/telepresenceio/telepresence/v2/pkg/client"
 	"github.com/telepresenceio/telepresence/v2/pkg/filelocation"
 )
-
-// IsTerminal returns whether the given file descriptor is a terminal
-var IsTerminal = term.IsTerminal
 
 // loggerForTest exposes internals to initcontext_test.go
 var loggerForTest *logrus.Logger

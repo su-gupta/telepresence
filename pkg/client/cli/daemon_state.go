@@ -16,6 +16,7 @@ import (
 
 	"github.com/telepresenceio/telepresence/rpc/v2/daemon"
 	"github.com/telepresenceio/telepresence/v2/pkg/client"
+	"github.com/telepresenceio/telepresence/v2/pkg/client/cli/cliutil"
 	"github.com/telepresenceio/telepresence/v2/pkg/filelocation"
 )
 
@@ -68,7 +69,7 @@ func (ds *daemonState) EnsureState() (bool, error) {
 		_ = lf.Close()
 	}
 
-	err = runAsRoot(ds.cmd.Context(), client.GetExe(), []string{"daemon-foreground", logDir, configDir, dnsIP})
+	err = cliutil.RunAsRoot(ds.cmd.Context(), client.GetExe(), []string{"daemon-foreground", logDir, configDir, dnsIP})
 	if err != nil {
 		return false, errors.Wrap(err, "failed to launch the server")
 	}

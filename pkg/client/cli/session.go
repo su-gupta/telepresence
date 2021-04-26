@@ -3,9 +3,9 @@ package cli
 import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-
 	"github.com/telepresenceio/telepresence/rpc/v2/daemon"
 	"github.com/telepresenceio/telepresence/v2/pkg/client"
+	"github.com/telepresenceio/telepresence/v2/pkg/client/cli/cliutil"
 )
 
 type sessionInfo struct {
@@ -81,7 +81,7 @@ func (si *sessionInfo) connect(cmd *cobra.Command, args []string) error {
 		return si.withConnector(true, func(_ *connectorState) error { return nil })
 	}
 	return si.withConnector(false, func(cs *connectorState) error {
-		return start(cmd.Context(), args[0], args[1:], true, cmd.InOrStdin(), cmd.OutOrStdout(), cmd.ErrOrStderr())
+		return cliutil.Start(cmd.Context(), args[0], args[1:], true, cmd.InOrStdin(), cmd.OutOrStdout(), cmd.ErrOrStderr())
 	})
 }
 

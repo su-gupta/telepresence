@@ -3,6 +3,7 @@ module github.com/telepresenceio/telepresence/v2
 go 1.15
 
 require (
+	github.com/Microsoft/go-winio v0.4.16
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/datawire/ambassador v1.13.7-0.20210527054604-663dfb393e59
 	github.com/datawire/dlib v1.2.1
@@ -10,7 +11,7 @@ require (
 	github.com/godbus/dbus/v5 v5.0.4-0.20201218172701-b3768b321399
 	github.com/google/go-cmp v0.5.5
 	github.com/google/uuid v1.1.2
-	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
+	github.com/hectane/go-acl v0.0.0-20190604041725-da78bae5fc95
 	github.com/miekg/dns v1.1.35
 	github.com/pkg/browser v0.0.0-20180916011732-0a3d74bf9ce4
 	github.com/pkg/errors v0.9.1
@@ -20,10 +21,12 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.7.0
 	github.com/telepresenceio/telepresence/rpc/v2 v2.3.2
-	golang.org/x/net v0.0.0-20210226172049-e18ecbb05110
+	golang.org/x/net v0.0.0-20210410081132-afb366fc7cd1
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
-	golang.org/x/sys v0.0.0-20210124154548-22da62e12c0c
+	golang.org/x/sys v0.0.0-20210403161142-5e06dd20ab57
 	golang.org/x/term v0.0.0-20201126162022-7de9c90e9dd1
+	golang.zx2c4.com/wireguard v0.0.0-20210427022245-097af6e1351b
+	golang.zx2c4.com/wireguard/windows v0.3.11
 	google.golang.org/grpc v1.34.0
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776

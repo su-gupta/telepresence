@@ -14,6 +14,7 @@ import (
 	"github.com/telepresenceio/telepresence/rpc/v2/daemon"
 	"github.com/telepresenceio/telepresence/rpc/v2/manager"
 	"github.com/telepresenceio/telepresence/v2/pkg/client"
+	"github.com/telepresenceio/telepresence/v2/pkg/client/cli/cliutil"
 	"github.com/telepresenceio/telepresence/v2/pkg/filelocation"
 )
 
@@ -60,7 +61,7 @@ func (cs *connectorState) EnsureState() (bool, error) {
 		break
 	}
 
-	err := start(cs.cmd.Context(), client.GetExe(), []string{"connector-foreground"}, false, nil, nil, nil)
+	err := cliutil.Start(cs.cmd.Context(), client.GetExe(), []string{"connector-foreground"}, false, nil, nil, nil)
 	if err != nil {
 		return false, errors.Wrap(err, "failed to launch the connector service")
 	}
