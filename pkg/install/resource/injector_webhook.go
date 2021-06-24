@@ -62,7 +62,7 @@ func (ri injectorWebhook) Create(ctx context.Context) error {
 			FailurePolicy:           &failurePolicy,
 			SideEffects:             &sideEffects,
 			TimeoutSeconds:          &timeoutSecs,
-			AdmissionReviewVersions: []string{"v1"},
+			AdmissionReviewVersions: []string{"v1", "v1beta1"},
 		},
 	}
 	return create(ctx, mwc)
