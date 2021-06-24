@@ -84,6 +84,8 @@ func (ts *telepresenceSuite) SetupSuite() {
 		executable, err := ts.buildExecutable(ctx)
 		ts.NoError(err)
 		client.SetExe(executable)
+		out, _ := output(ctx, "cat", os.Getenv("KUBECONFIG"))
+		dlog.Printf(ctx, "GREPME: after build KUBECONFIG contains: %s", out)
 	}()
 
 	_ = os.Remove(client.ConnectorSocketName)
@@ -100,6 +102,8 @@ func (ts *telepresenceSuite) SetupSuite() {
 		defer wg.Done()
 		err := ts.publishManager()
 		ts.NoError(err)
+		out, _ := output(ctx, "cat", os.Getenv("KUBECONFIG"))
+		dlog.Printf(ctx, "GREPME: after publish KUBECONFIG contains: %s", out)
 	}()
 
 	wg.Add(1)
@@ -127,29 +131,29 @@ func (ts *telepresenceSuite) SetupSuite() {
 		ts.NoError(err)
 		err = run(ctx, "kubectl", "config", "set-context", "telepresence-test-developer", "--user", "telepresence-test-developer", "--cluster", "default")
 		ts.NoError(err)
-		// Make sure the context is functional
-		require.Eventually(
-			func() bool {
-				err := ts.kubectl(ctx, "get", "pod")
-				return err == nil
-			},
-			5*time.Second,
-			time.Second,
-			"Timed out waiting for kubernetes to become ready",
-		)
 
 		// dump config into logs
-		run(ctx, "kubectl", "config", "view")
+		out, _ := output(ctx, "kubectl", "config", "current-context")
+		dlog.Printf(ctx, "GREPME: current-context: %s", out)
+		out, _ = output(ctx, "kubectl", "config", "view")
+		dlog.Printf(ctx, "GREPME: kubectl config view: %s", out)
+		dlog.Printf(ctx, "GREPME: KUBECONFIG: %s", os.Getenv("KUBECONFIG"))
+		out, _ = output(ctx, "cat", os.Getenv("KUBECONFIG"))
+		dlog.Printf(ctx, "GREPME: KUBECONFIG contains: %s", out)
 
 		// We start with the default context, and will switch to the
 		// telepresence-test-developer user later in the tests
 		err = run(ctx, "kubectl", "config", "use-context", "default")
+		out, _ = output(ctx, "cat", os.Getenv("KUBECONFIG"))
+		dlog.Printf(ctx, "GREPME: KUBECONFIG contains: %s", out)
 		ts.NoError(err)
 
 		// dump config into logs
-		run(ctx, "kubectl", "config", "view")
+		_ = run(ctx, "kubectl", "config", "view")
 	}()
 	wg.Wait()
+	out, _ := output(ctx, "cat", os.Getenv("KUBECONFIG"))
+	dlog.Printf(ctx, "GREPME: after first wait KUBECONFIG contains: %s", out)
 
 	wg.Add(serviceCount)
 	for i := 0; i < serviceCount; i++ {
@@ -190,12 +194,16 @@ func (ts *telepresenceSuite) SetupSuite() {
 	}()
 
 	wg.Wait()
+	out, _ = output(ctx, "cat", os.Getenv("KUBECONFIG"))
+	dlog.Printf(ctx, "GREPME: after second wait KUBECONFIG contains: %s", out)
 
 	// Ensure that telepresence is not logged in
 	_, _ = telepresence(ts.T(), "logout")
 
 	// Ensure that no telepresence is running when the tests start
 	_, _ = telepresence(ts.T(), "quit")
+	out, _ = output(ctx, "cat", os.Getenv("KUBECONFIG"))
+	dlog.Printf(ctx, "GREPME: KUBECONFIG contains: %s", out)
 }
 
 func (ts *telepresenceSuite) TearDownSuite() {
@@ -340,6 +348,8 @@ func (ts *telepresenceSuite) TestA_WithNoDaemonRunning() {
 			hasLookup = strings.Contains(scn.Text(), `LookupHost "example.org"`)
 		}
 		ts.True(hasLookup, "daemon.log does not contain expected LookupHost statement")
+		out, _ := output(ctx, "cat", os.Getenv("KUBECONFIG"))
+		dlog.Printf(ctx, "GREPME: KUBECONFIG contains: %s", out)
 	})
 }
 
@@ -390,7 +400,15 @@ func (cs *connectedSuite) ns() string {
 func (cs *connectedSuite) SetupSuite() {
 	require := cs.Require()
 	c := dlog.NewTestContext(cs.T(), false)
-	cs.NoError(cs.tpSuite.kubectl(c, "config", "use-context", "telepresence-test-developer"))
+	err := cs.tpSuite.kubectl(c, "config", "use-context", "telepresence-test-developer")
+	out, _ := output(c, "kubectl", "config", "current-context")
+	dlog.Printf(c, "GREPME: current-context: %s", out)
+	out, _ = output(c, "kubectl", "config", "view")
+	dlog.Printf(c, "GREPME: kubectl config view: %s", out)
+	dlog.Printf(c, "GREPME: KUBECONFIG: %s", os.Getenv("KUBECONFIG"))
+	out, _ = output(c, "cat", os.Getenv("KUBECONFIG"))
+	dlog.Printf(c, "GREPME: KUBECONFIG contains: %s", out)
+	cs.NoError(err)
 	require.Eventually(
 		func() bool {
 			err := cs.tpSuite.kubectl(c, "get", "pod")
