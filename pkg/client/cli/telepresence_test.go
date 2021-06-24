@@ -127,6 +127,16 @@ func (ts *telepresenceSuite) SetupSuite() {
 		ts.NoError(err)
 		err = run(ctx, "kubectl", "config", "set-context", "telepresence-test-developer", "--user", "telepresence-test-developer", "--cluster", "default")
 		ts.NoError(err)
+		// Make sure the context is functional
+		require.Eventually(
+			func() bool {
+				err := ts.kubectl(ctx, "get", "pod")
+				return err == nil
+			},
+			5*time.Second,
+			time.Second,
+			"Timed out waiting for kubernetes to become ready",
+		)
 
 		// We start with the default context, and will switch to the
 		// telepresence-test-developer user later in the tests
