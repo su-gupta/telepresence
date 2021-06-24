@@ -138,10 +138,16 @@ func (ts *telepresenceSuite) SetupSuite() {
 			"Timed out waiting for kubernetes to become ready",
 		)
 
+		// dump config into logs
+		run(ctx, "kubectl", "config", "view")
+
 		// We start with the default context, and will switch to the
 		// telepresence-test-developer user later in the tests
 		err = run(ctx, "kubectl", "config", "use-context", "default")
 		ts.NoError(err)
+
+		// dump config into logs
+		run(ctx, "kubectl", "config", "view")
 	}()
 	wg.Wait()
 
